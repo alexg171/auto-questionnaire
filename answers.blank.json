@@ -1,0 +1,98 @@
+{
+"page_1_survey_date": {
+    "mm": "02",
+    "dd": "08", 
+    "yyyy": "2024"
+},
+"page_2_name":
+"",
+"page_3_international": "2",
+"page_4_ethnicity": 
+[1],
+"page_5_undergrad_year":
+,
+"page_6_start_date": {
+"mm": "01",
+"yyyy": "2023"
+},
+"page_7_completion_date": {
+"mm": "01",
+"yyyy": "2024"
+},
+"page_8_mba_format": "Professional",
+"page_9_military_affiliation": "-1",
+"page_10_employed_during_mba": 
+,
+"page_11_changed_jobs": 
+,
+"page_12_current_employer": 
+"",
+"page_13_employer_location": 
+"",
+"page_14_industry": 
+,
+"page_15_job_title": 
+"",
+"page_16_occupation": 
+,
+"page_17_employment_status": 
+,
+"page_18_current_salary": 
+,
+"page_19_years_with_employer": 
+,
+"page_20_remain_with_employer": 
+,
+"page_21_expect_salary_change": 
+,
+"page_22_new_position_title": 
+"",
+"page_23_new_annual_salary": 
+,
+"page_24_already_have_new_job": 
+,
+"page_25_new_employer_name": 
+"",
+"page_26_new_employer_location": 
+"",
+"page_27_new_employer_industry": 
+"",
+"page_28_new_job_title": 
+"",
+"page_29_new_employer_salary": 
+"",
+"page_30_new_employment_status": 
+"",
+"page_31_job_acceptance_timing": 
+"",
+"page_32_currently_seeking_employment": 
+,
+"page_33_seeking_industry": 
+"",
+"page_34_duration_seeking": 
+"",
+"page_35_plans_next_18_months": 
+"",
+"page_36_satisfaction_level": 
+,
+"page_37_comments_suggestions": 
+"",
+"page_38_admin_improvements": 
+"",
+"page_39_areas_worked_well": 
+"",
+"page_40_recommend_to_colleague": 
+,
+"page_41_why_recommend": 
+"",
+"page_42_curriculum_relevance": 
+,
+"page_43_curriculum_comments": 
+"",
+"page_44_course_evaluation_matrix": [
+
+],
+"page_45_ranking_order": [
+
+]
+}
