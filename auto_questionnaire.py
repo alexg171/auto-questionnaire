@@ -663,7 +663,7 @@ def _fill_current_page_value(driver, wait, key, value):
     # Try choice questions first when options exist.
     if _visible_choice_rows_in_wrapper(wrapper):
         # Site ordering is reversed for military-affiliation page; flip index here.
-        if key == "page_9_military_affiliation":
+        if key in ("question_9_military_affiliation", "page_9_military_affiliation"):
             rows = _visible_choice_rows_in_wrapper(wrapper)
             v = str(value).strip()
             if v.isdigit():
@@ -676,10 +676,10 @@ def _fill_current_page_value(driver, wait, key, value):
     _fill_text_in_wrapper(driver, wait, wrapper, value)
 
 
-def _ordered_page_keys(data):
+def _ordered_question_keys(data):
     pairs = []
     for k in data.keys():
-        m = re.match(r"^page_(\d+)_", k)
+        m = re.match(r"^(?:question|page)_(\d+)_", k)
         if m:
             pairs.append((int(m.group(1)), k))
     return [k for _, k in sorted(pairs, key=lambda x: x[0])]
@@ -722,22 +722,22 @@ def auto_survey(data):
         print("Clicking next")
         click_next_and_advance(driver, wait)
             
-        # Follow exact page order from answers.json (page_1 ... page_45).
+        # Follow exact numeric order from answers.json/question keys.
         post_scroll_pages_remaining = 0
-        for key in _ordered_page_keys(data):
+        for key in _ordered_question_keys(data):
             if post_scroll_pages_remaining > 0:
                 print("  Waiting for auto-scroll to settle...")
                 _wait_for_scroll_settle(driver, settle_ms=900, timeout_s=10)
                 slow_wait()
                 post_scroll_pages_remaining -= 1
 
-            if key == "page_45_ranking_order":
+            if key in ("question_45_ranking_order", "page_45_ranking_order"):
                 print("\n--- MANUAL RANKING ORDER ---")
                 print("Please drag items in this order:", data[key])
                 input("Press ENTER here after you finish the Drag-and-Drop to close the script...")
                 break
 
-            if key == "page_44_course_evaluation_matrix":
+            if key in ("question_44_course_evaluation_matrix", "page_44_course_evaluation_matrix"):
                 print("Filling Course Evaluation Matrix...")
                 slow_wait()
                 matrix_rows = [r for r in driver.find_elements(By.CLASS_NAME, "matrix-row") if r.is_displayed()]
@@ -752,7 +752,7 @@ def auto_survey(data):
             print(f"Filling {key}...")
             _fill_current_page_value(driver, wait, key, data[key])
             click_next_and_advance(driver, wait)
-            if key == "page_35_plans_next_18_months":
+            if key in ("question_35_plans_next_18_months", "page_35_plans_next_18_months"):
                 # This transition triggers extra auto-scroll behavior on the next two pages.
                 print("  Extra wait after page 35 (auto-scroll pages).")
                 _wait_for_scroll_settle(driver, settle_ms=1100, timeout_s=12)
