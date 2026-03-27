@@ -863,11 +863,14 @@ def auto_survey(data):
                 post_scroll_pages_remaining -= 1
 
             if key in ("question_45_ranking_order", "page_45_ranking_order"):
+                classes = ["ACCT 5304", "MGMT 5311", "BLAW 5306", "QMB 5311", "FIN 5311", "ECON 5311", "MKT 5311", "OSCM 5308", "MGMT 5335"]
+                ranked_names = [classes[int(i) - 1] for i in data[key]]
                 print("\nNAME: " + data["question_2_name"])
                 driver.execute_script("console.log('Name:', arguments[0]);", data["question_2_name"])
                 print("\n--- MANUAL RANKING ORDER ---")
                 print("Please drag items in this order:", data[key])
-                driver.execute_script("console.log('Ranking order:', arguments[0]);", data[key])
+                print("Classes:", ranked_names)
+                driver.execute_script("console.log('Ranking order:', arguments[0], arguments[1]);", data[key], ranked_names)
                 input("Press ENTER here after you finish the Drag-and-Drop to close the script...")
                 break
 
