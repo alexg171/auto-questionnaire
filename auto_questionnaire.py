@@ -635,8 +635,89 @@ def _fill_dropdown_in_wrapper(driver, wrapper, key, value):
         )
 
 
-def _fill_current_page_value(driver, wait, key, value):
+def _wrapper_has_fill_target(driver, wrapper, key, value):
+    if wrapper is None:
+        return False
+
+    try:
+        if not wrapper.is_displayed():
+            return False
+    except Exception:
+        return False
+
+    if isinstance(value, dict):
+        if "undergrad_year" in key:
+            return _first_visible(
+                driver,
+                "//button[contains(@class,'dropdown-toggle') and starts-with(@data-id,'dt_year_')]",
+            ) is not None
+        return bool(
+            wrapper.find_elements(
+                By.CSS_SELECTOR,
+                "select[name^='dt_month_'], select[name^='dt_day_'], select[name^='dt_year_']",
+            )
+        )
+
+    if "undergrad_year" in key:
+        return _first_visible(
+            driver,
+            "//button[contains(@class,'dropdown-toggle') and starts-with(@data-id,'dt_year_')]",
+        ) is not None
+
+    if key in ("question_44_course_evaluation_matrix", "page_44_course_evaluation_matrix"):
+        rows = wrapper.find_elements(By.CSS_SELECTOR, "tr[id^='questionRow']")
+        return any(row.is_displayed() for row in rows)
+
+    if _visible_choice_rows_in_wrapper(wrapper):
+        return True
+
+    if wrapper.find_elements(By.CSS_SELECTOR, ".answer-container.dropdown-question select"):
+        return True
+
+    for el in wrapper.find_elements(By.CSS_SELECTOR, "input[type='text'], textarea"):
+        try:
+            if el.is_displayed():
+                return True
+        except Exception:
+            continue
+
+    return False
+
+
+def _wait_for_fillable_page(driver, key, value, timeout_s=18):
+    """
+    Some QuestionPro transitions briefly show interstitial pages that auto-advance.
+    Wait until the active page exposes controls that match the value we intend to fill.
+    """
+    end = time.time() + timeout_s
+    last_fp = None
+    last_change = time.time()
+
+    while time.time() < end:
+        wrapper = _active_wrapper(driver)
+        if _wrapper_has_fill_target(driver, wrapper, key, value):
+            return wrapper
+
+        fp = _visible_question_fingerprint(driver)
+        now = time.time()
+        if fp != last_fp:
+            last_fp = fp
+            last_change = now
+        elif now - last_change > 0.8:
+            _wait_for_scroll_settle(driver, settle_ms=700, timeout_s=3)
+            last_change = now
+
+        time.sleep(0.2)
+
     wrapper = _active_wrapper(driver)
+    raise RuntimeError(
+        f"Timed out waiting for a fillable page for {key}. "
+        f"Visible page fingerprint: {_visible_question_fingerprint(driver)!r}."
+    )
+
+
+def _fill_current_page_value(driver, wait, key, value):
+    wrapper = _wait_for_fillable_page(driver, key, value)
     if wrapper is None:
         raise RuntimeError("Could not detect active survey page.")
 
@@ -674,6 +755,53 @@ def _fill_current_page_value(driver, wait, key, value):
         return
 
     _fill_text_in_wrapper(driver, wait, wrapper, value)
+
+
+def _fill_course_evaluation_matrix(driver, wait, ratings):
+    wrapper = _wait_for_fillable_page(driver, "question_44_course_evaluation_matrix", ratings)
+    slow_wait()
+
+    matrix_rows = []
+    for row in wrapper.find_elements(By.CSS_SELECTOR, "tr[id^='questionRow']"):
+        try:
+            if row.is_displayed():
+                matrix_rows.append(row)
+        except Exception:
+            continue
+
+    if not matrix_rows:
+        raise RuntimeError("Matrix page was expected from answers order, but matrix rows are not visible.")
+
+    if len(ratings) > len(matrix_rows):
+        raise RuntimeError(
+            f"Matrix answer list has {len(ratings)} ratings, but only {len(matrix_rows)} visible rows were found."
+        )
+
+    for i, rating in enumerate(ratings):
+        idx = int(rating) - 1
+        options = matrix_rows[i].find_elements(By.CSS_SELECTOR, "input.radio-check")
+        visible_options = []
+        for opt in options:
+            try:
+                opt.is_displayed()
+                visible_options.append(opt)
+            except Exception:
+                visible_options.append(opt)
+
+        if idx < 0 or idx >= len(visible_options):
+            raise RuntimeError(
+                f"Matrix rating {rating} is out of range for row {i + 1}; found {len(visible_options)} options."
+            )
+
+        target = visible_options[idx]
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", target)
+        time.sleep(0.15)
+        try:
+            label = matrix_rows[i].find_element(By.CSS_SELECTOR, f"label[for='{target.get_attribute('id')}']")
+            driver.execute_script("arguments[0].click();", label)
+        except Exception:
+            driver.execute_script("arguments[0].click();", target)
+        time.sleep(0.15)
 
 
 def _ordered_question_keys(data):
@@ -739,13 +867,7 @@ def auto_survey(data):
 
             if key in ("question_44_course_evaluation_matrix", "page_44_course_evaluation_matrix"):
                 print("Filling Course Evaluation Matrix...")
-                slow_wait()
-                matrix_rows = [r for r in driver.find_elements(By.CLASS_NAME, "matrix-row") if r.is_displayed()]
-                if not matrix_rows:
-                    raise RuntimeError("Matrix page was expected from answers order, but matrix rows are not visible.")
-                for i, rating in enumerate(data[key]):
-                    row_options = matrix_rows[i].find_elements(By.CLASS_NAME, "radio-check")
-                    driver.execute_script("arguments[0].click();", row_options[int(rating) - 1])
+                _fill_course_evaluation_matrix(driver, wait, data[key])
                 click_next_and_advance(driver, wait)
                 continue
 
@@ -767,6 +889,8 @@ def auto_survey(data):
         
 # Load answer JSON and Run
 if __name__ == "__main__":
-    with open('answers.json', 'r') as f:
+    import sys
+    filename = sys.argv[1] if len(sys.argv) > 1 else 'answers.json'
+    with open(filename, 'r') as f:
         data = json.load(f)
     auto_survey(data)
