@@ -723,13 +723,16 @@ def _fill_current_page_value(driver, wait, key, value):
 
     if isinstance(value, dict):
         if "undergrad_year" in key:
-            fill_undergrad_year(driver, wait, value.get("yyyy", ""))
+            yyyy = value.get("yyyy", "")
+            if yyyy not in ("", None, 0):
+                fill_undergrad_year(driver, wait, yyyy)
         else:
             _fill_date_in_wrapper(driver, wrapper, value)
         return
 
     if "undergrad_year" in key:
-        fill_undergrad_year(driver, wait, value)
+        if value not in ("", None, 0):
+            fill_undergrad_year(driver, wait, value)
         return
 
     if wrapper.find_elements(By.CSS_SELECTOR, ".answer-container.dropdown-question select"):
